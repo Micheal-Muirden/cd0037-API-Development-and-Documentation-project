@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "1. **Python 3.7** - Follow instructions to install the latest version of python for your platform in the [python docs](https://docs.python.org/3/using/unix.html#getting-and-installing-the-latest-version-of-python)",
+  "main": "index.js",
+  "scripts": {
+    "createdb": "echo \"password is 'password'\" && createdb trivia && psql trivia < trivia.psql",
+    "install": "pip install -r requirements.txt",
+    "start": "set FLASK_APP=flaskr && flask run --reload",
+    "test": "dropdb trivia_test && createdb trivia_test && psql trivia_test < trivia.psql && python test_flaskr.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Micheal-Muirden/cd0037-API-Development-and-Documentation-project.git"
+  },
+  "author": "Micheal Muirden",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Micheal-Muirden/cd0037-API-Development-and-Documentation-project/issues"
+  },
+  "homepage": "https://github.com/Micheal-Muirden/cd0037-API-Development-and-Documentation-project#readme"
+}
