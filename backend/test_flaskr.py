@@ -18,7 +18,7 @@ class TriviaTestCase(unittest.TestCase):
         self.database_path = "postgres://{}/{}".format('localhost:5432', self.database_name)
 
         # All of these aren't needed, and in fact throw an error in more recent versions of SQL Alchemy 
-        
+
         # setup_db(self.app, self.database_path)
         # binds the app to the current context
         # with self.app.app_context():
@@ -33,17 +33,27 @@ class TriviaTestCase(unittest.TestCase):
 
     """
     TODO Write at least one test for each test for successful operation and for expected errors.
-    """
-
-    def test_get_all_questions(self):
+    """ 
+    def test_get_questions(self):
         res = self.client().get("/questions")
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["total_questions"])
-        self.assertTrue(len(data["questions"]))
+        self.assertEqual(len(data["questions"]), 10)
         self.assertTrue(len(data["categories"]))
         self.assertEqual(data["current_category"], "All")
+
+    def test_get_paginated_questions(self):
+        res = self.client().get("/questions?page=2")
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(data["questions"]), 9)
+    
+    def test_get_out_of_bound_page(self):
+        res = self.client().get("/questions?page=999")
+        self.assertEqual(res.status_code, 404)
 
 
 # Make the tests conveniently executable

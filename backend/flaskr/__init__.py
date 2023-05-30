@@ -1,3 +1,4 @@
+import json
 import os
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -7,6 +8,50 @@ import random
 from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
+
+########################################################################################################################
+# HELPER FUNCTIONS
+########################################################################################################################
+
+# Queries the database for the catagories and formats them as expected in the frontend
+def query_categories():
+    rawCategories = Category.query.order_by(Category.id).all()
+    categoryArray = [category.format() for category in rawCategories]
+    categories = {}
+    for category in categoryArray:
+        categories.update(category)
+    return categories
+
+# Queries the database for the questions and categories and formats them as expected in the frontend
+def query_questions(request):
+    selection = Question.query.order_by(Question.id).all()
+    current_questions = paginate_questions(request, selection)
+
+    categories = query_categories()
+
+    if len(current_questions) == 0 or len(categories) == 0:
+        raise Exception("No questions or categories")
+
+    return {
+            "questions": current_questions,
+            "total_questions": len(selection),
+            "categories": categories,
+            "current_category": "All"
+        }
+
+# Queries the database for all questions and returns a subset as specified by the page query param in the request
+def paginate_questions(request, selection):
+    page = request.args.get("page", 1, type=int)
+    start = (page - 1) * QUESTIONS_PER_PAGE
+    end = start + QUESTIONS_PER_PAGE
+
+    questions = [question.format() for question in selection]
+    current_questions = questions[start:end]
+    return current_questions
+
+########################################################################################################################
+# FLASK / CORS CONFIG
+########################################################################################################################
 
 def create_app(test_config=None):
     # create and configure the app
@@ -37,13 +82,9 @@ def create_app(test_config=None):
     for all available categories.
     """
 
-    def query_categories():
-        rawCategories = Category.query.order_by(Category.id).all()
-        categoryArray = [category.format() for category in rawCategories]
-        categories = {}
-        for category in categoryArray:
-            categories.update(category)
-        return categories
+########################################################################################################################
+# ROUTES
+########################################################################################################################
 
     @app.route("/categories", methods=["GET"])
     def retrieve_categories():
@@ -62,33 +103,9 @@ def create_app(test_config=None):
     Clicking on the page numbers should update the questions.
     """
 
-    def paginate_questions(request, selection):
-        page = request.args.get("page", 1, type=int)
-        start = (page - 1) * QUESTIONS_PER_PAGE
-        end = start + QUESTIONS_PER_PAGE
-
-        questions = [question.format() for question in selection]
-        current_questions = questions[start:end]
-        return current_questions
-
     @app.route("/questions", methods=["GET"])
     def retrieve_questions():
-        selection = Question.query.order_by(Question.id).all()
-        current_questions = paginate_questions(request, selection)
-
-        categories = query_categories()
-
-        if len(current_questions) == 0 or len(categories) == 0:
-            abort(404)
-
-        return jsonify(
-            {
-                "questions": current_questions,
-                "total_questions": len(selection),
-                "categories": categories,
-                "current_category": "All"
-            }
-        )
+        return query_questions(request)
 
     """
     @TODO:
@@ -98,22 +115,25 @@ def create_app(test_config=None):
     This removal will persist in the database and when you refresh the page.
     """
 
-    # @app.route("/questions", methods=["GET"])
-    # def retrieve_questions():
-    #     selection = Question.query.order_by(Question.id).all()
-    #     current_questions = paginate_questions(request, selection)
+    @app.route("/questions/<int:question_id>", methods=["DELETE"])
+    def delete_question(question_id: str):
+        try:
+            question: Question = Question.query.filter(Question.id == question_id).one_or_none()
 
-    #     if len(current_questions) == 0:
-    #         abort(404)
+            if question is None:
+                abort(404)
 
-    #     return jsonify(
-    #         {
-    #             "questions": current_questions,
-    #             "total_questions": len(selection),
-    #             "categories": CATEGORIES,
-    #             "current_category": "All"
-    #         }
-    #     )
+            question.delete()
+            try:
+                questions = query_questions(request)
+                return {
+                    "success": True,
+                    "deleted": question_id,
+                    "questions": questions["questions"],
+                    "total_questions": questions["total_questions"],
+                }
+            except: abort(404)
+        except: abort(422)
 
     """
     @TODO:
@@ -157,6 +177,10 @@ def create_app(test_config=None):
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not.
     """
+
+########################################################################################################################
+# ERROR HANDLERS
+########################################################################################################################
 
     """
     @TODO:
