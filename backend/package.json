@@ -5,9 +5,11 @@
   "main": "index.js",
   "scripts": {
     "createdb": "echo \"password is 'password'\" && createdb trivia && psql trivia < trivia.psql",
+    "createtestdb": "echo \"password is 'password'\" && dropdb trivia_test & createdb trivia_test && psql trivia_test < trivia.psql",
     "install": "pip install -r requirements.txt",
     "start": "set FLASK_APP=flaskr && flask run --reload",
-    "test": "dropdb trivia_test && createdb trivia_test && psql trivia_test < trivia.psql && python test_flaskr.py"
+    "test": "python test_flaskr.py", 
+    "cleantest": "npm run createtestdb && npm run test"
   },
   "repository": {
     "type": "git",
