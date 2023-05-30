@@ -57,7 +57,7 @@ class Question(db.Model):
             'answer': self.answer,
             'category': self.category,
             'difficulty': self.difficulty
-            }
+        }
 
 """
 Category
@@ -73,7 +73,4 @@ class Category(db.Model):
         self.type = type
 
     def format(self):
-        return {
-            'id': self.id,
-            'type': self.type
-            }
+        return {self.id: self.type}

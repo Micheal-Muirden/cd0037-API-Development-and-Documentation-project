@@ -19,29 +19,17 @@ def create_app(test_config=None):
     # CORS Headers
     @app.after_request
     def after_request(response):
-        response.headers.add(
-            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
-        )
-        response.headers.add(
-            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
-        )
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization, true")
+        response.headers.add("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
         return response
-    
-    @app.route("/")
-    def test():
-        return jsonify(
-            {
-                "Hello": "I'm alive!"
-            }
-        )
 
-    """
-    @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
-    """
+    # """
+    # @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+    # """
 
-    """
-    @TODO: Use the after_request decorator to set Access-Control-Allow
-    """
+    # """
+    # @TODO: Use the after_request decorator to set Access-Control-Allow
+    # """
 
     """
     @TODO:
@@ -49,6 +37,17 @@ def create_app(test_config=None):
     for all available categories.
     """
 
+    def query_categories():
+        rawCategories = Category.query.order_by(Category.id).all()
+        categoryArray = [category.format() for category in rawCategories]
+        categories = {}
+        for category in categoryArray:
+            categories.update(category)
+        return categories
+
+    @app.route("/categories", methods=["GET"])
+    def retrieve_categories():
+        return jsonify({"categories": query_categories()})
 
     """
     @TODO:
@@ -63,6 +62,34 @@ def create_app(test_config=None):
     Clicking on the page numbers should update the questions.
     """
 
+    def paginate_questions(request, selection):
+        page = request.args.get("page", 1, type=int)
+        start = (page - 1) * QUESTIONS_PER_PAGE
+        end = start + QUESTIONS_PER_PAGE
+
+        questions = [question.format() for question in selection]
+        current_questions = questions[start:end]
+        return current_questions
+
+    @app.route("/questions", methods=["GET"])
+    def retrieve_questions():
+        selection = Question.query.order_by(Question.id).all()
+        current_questions = paginate_questions(request, selection)
+
+        categories = query_categories()
+
+        if len(current_questions) == 0 or len(categories) == 0:
+            abort(404)
+
+        return jsonify(
+            {
+                "questions": current_questions,
+                "total_questions": len(selection),
+                "categories": categories,
+                "current_category": "All"
+            }
+        )
+
     """
     @TODO:
     Create an endpoint to DELETE question using a question ID.
@@ -70,6 +97,23 @@ def create_app(test_config=None):
     TEST: When you click the trash icon next to a question, the question will be removed.
     This removal will persist in the database and when you refresh the page.
     """
+
+    # @app.route("/questions", methods=["GET"])
+    # def retrieve_questions():
+    #     selection = Question.query.order_by(Question.id).all()
+    #     current_questions = paginate_questions(request, selection)
+
+    #     if len(current_questions) == 0:
+    #         abort(404)
+
+    #     return jsonify(
+    #         {
+    #             "questions": current_questions,
+    #             "total_questions": len(selection),
+    #             "categories": CATEGORIES,
+    #             "current_category": "All"
+    #         }
+    #     )
 
     """
     @TODO:
@@ -119,6 +163,12 @@ def create_app(test_config=None):
     Create error handlers for all expected errors
     including 404 and 422.
     """
+    # @app.errorhandler(404)
+    # def not_found(error):
+    #     return (
+    #         jsonify({"success": False, "error": 404, "message": "resource not found"}),
+    #         404,
+    #     )
 
     return app
 
