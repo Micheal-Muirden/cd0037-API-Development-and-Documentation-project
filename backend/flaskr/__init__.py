@@ -23,20 +23,23 @@ def query_categories():
     return categories
 
 # Queries the database for the questions and categories and formats them as expected in the frontend
-def query_questions(request):
+def query_questions(request, searchTerm="", category="All"):
     selection = Question.query.order_by(Question.id).all()
-    current_questions = paginate_questions(request, selection)
+    
+    filteredSelection = []
+    for element in selection:
+        if(searchTerm.lower() in element.question.lower() and (category == 'All' or category == element.category)):
+            filteredSelection.append(element)
 
+    current_questions = paginate_questions(request, filteredSelection)
     categories = query_categories()
-
-    if len(current_questions) == 0 or len(categories) == 0:
-        raise Exception("No questions or categories")
+    print(jsonify(categories))
 
     return {
             "questions": current_questions,
-            "total_questions": len(selection),
+            "total_questions": len(filteredSelection),
             "categories": categories,
-            "current_category": "All"
+            "current_category": category
         }
 
 # Queries the database for all questions and returns a subset as specified by the page query param in the request
@@ -49,9 +52,29 @@ def paginate_questions(request, selection):
     current_questions = questions[start:end]
     return current_questions
 
+# Gets a single question which has not previously been asked, questions can also be limited to a single category
+def run_quiz(previousQuestions, quizCategory):
+    categoryId = quizCategory.get("id", None)
+    selection = Question.query.filter_by(category = categoryId).all()
+
+    filteredSelection = []
+    for element in selection:
+        if(element.id not in previousQuestions):
+            filteredSelection.append(element)
+
+    return random.choice(filteredSelection) if len(filteredSelection) > 0 else None
+
 ########################################################################################################################
 # FLASK / CORS CONFIG
 ########################################################################################################################
+
+    # """
+    # @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+    # """
+
+    # """
+    # @TODO: Use the after_request decorator to set Access-Control-Allow
+    # """
 
 def create_app(test_config=None):
     # create and configure the app
@@ -68,23 +91,15 @@ def create_app(test_config=None):
         response.headers.add("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
         return response
 
-    # """
-    # @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
-    # """
-
-    # """
-    # @TODO: Use the after_request decorator to set Access-Control-Allow
-    # """
+########################################################################################################################
+# ROUTES
+########################################################################################################################
 
     """
     @TODO:
     Create an endpoint to handle GET requests
     for all available categories.
     """
-
-########################################################################################################################
-# ROUTES
-########################################################################################################################
 
     @app.route("/categories", methods=["GET"])
     def retrieve_categories():
@@ -146,6 +161,25 @@ def create_app(test_config=None):
     of the questions list in the "List" tab.
     """
 
+    @app.route("/questions", methods=["POST"])
+    def submit_question():
+        
+        try:
+            body = request.get_json()
+            question = body.get("question", None)
+            answer = body.get("answer", None)
+            category = body.get("category", None)
+            difficulty = body.get("difficulty", None)
+
+            if(question is None or answer is None or category is None or difficulty is None) :
+                abort(400)
+            
+            question: Question = Question(question, answer, category, difficulty)
+            try:
+                question.insert()
+                return jsonify({'success': True, "message": 'Question has been created'}), 201
+            except: abort(500)
+        except: abort(400)
     """
     @TODO:
     Create a POST endpoint to get questions based on a search term.
@@ -157,6 +191,13 @@ def create_app(test_config=None):
     Try using the word "title" to start.
     """
 
+    @app.route("/questions/search", methods=["POST"])
+    def search_questions():
+        try:
+            searchTerm = request.get_json().get("searchTerm", None)
+            return query_questions(request, searchTerm)
+        except: abort(400)
+
     """
     @TODO:
     Create a GET endpoint to get questions based on category.
@@ -165,6 +206,12 @@ def create_app(test_config=None):
     categories in the left column will cause only questions of that
     category to be shown.
     """
+
+    @app.route("/categories/<int:id>/questions", methods=["GET"])
+    def retrieve_question_category(id):
+        try:
+            return query_questions(request, "", id)
+        except: abort(400)
 
     """
     @TODO:
@@ -178,6 +225,18 @@ def create_app(test_config=None):
     and shown whether they were correct or not.
     """
 
+    @app.route("/quizzes", methods=["POST"])
+    def retrieve_quiz():
+        try:
+            body = request.get_json()
+            previousQuestions = body.get("previous_questions", None)
+            quizCategory = body.get("quiz_category", None)
+            chosenQuestion = run_quiz(previousQuestions, quizCategory)
+            return {
+                "question": chosenQuestion.format() if chosenQuestion else None
+            }
+        except: abort(400)
+
 ########################################################################################################################
 # ERROR HANDLERS
 ########################################################################################################################
@@ -189,10 +248,7 @@ def create_app(test_config=None):
     """
     # @app.errorhandler(404)
     # def not_found(error):
-    #     return (
-    #         jsonify({"success": False, "error": 404, "message": "resource not found"}),
-    #         404,
-    #     )
+    #     return (jsonify({"success": False, "error": 404, "message": "resource not found"}), 404)
 
     return app
 

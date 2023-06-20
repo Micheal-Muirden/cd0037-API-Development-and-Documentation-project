@@ -4,13 +4,11 @@
   "description": "1. **Python 3.7** - Follow instructions to install the latest version of python for your platform in the [python docs](https://docs.python.org/3/using/unix.html#getting-and-installing-the-latest-version-of-python)",
   "main": "index.js",
   "scripts": {
-    "createdb": "echo \"password is 'password'\" && dropdb trivia & createdb trivia && psql trivia < trivia.psql",
-    "createtestdb": "echo \"password is 'password'\" && dropdb trivia_test & createdb trivia_test && psql trivia_test < trivia.psql",
+    "create:db": "dropdb -f --if-exists trivia & createdb trivia && psql trivia < trivia.psql",
     "install": "pip install -r requirements.txt",
     "start": "set FLASK_APP=flaskr && flask run --reload",
-    "cleanstart": "npm run createdb && npm run start",
-    "test": "python test_flaskr.py", 
-    "cleantest": "npm run createtestdb && npm run test"
+    "cleanstart": "npm run create:db && npm run start",
+    "test": "npm run create:db && python test_flaskr.py"
   },
   "repository": {
     "type": "git",

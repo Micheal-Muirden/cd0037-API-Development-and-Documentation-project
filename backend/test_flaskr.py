@@ -34,6 +34,21 @@ class TriviaTestCase(unittest.TestCase):
     """
     TODO Write at least one test for each test for successful operation and for expected errors.
     """ 
+    ####################################################################################################################
+    # /CATEGORIES TEST CASES
+    ####################################################################################################################
+
+    def test_get_categories(self):
+        res = self.client().get("/categories")
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(data["categories"]), 6)
+
+    ####################################################################################################################
+    # /QUESTIONS TEST CASES
+    ####################################################################################################################
+
     def test_get_questions(self):
         res = self.client().get("/questions")
         data = json.loads(res.data)
@@ -54,6 +69,15 @@ class TriviaTestCase(unittest.TestCase):
     def test_get_out_of_bound_page(self):
         res = self.client().get("/questions?page=999")
         self.assertEqual(res.status_code, 404)
+
+    # def test_delete_question(self):
+    #     deleteId = 2
+    #     res = self.client().delete(f"/questions/{deleteId}")
+    #     data = json.loads(res.data)
+    #     self.assertEqual(res.status_code, 200)
+    #     self.assertEqual(len(data["total_questions"]), 18)
+    #     for question in data["questions"]:
+    #         self.assertFalse(question["id"] == deleteId)
 
 
 # Make the tests conveniently executable
