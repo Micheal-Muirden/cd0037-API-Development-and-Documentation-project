@@ -33,7 +33,6 @@ def query_questions(request, searchTerm="", category="All"):
 
     current_questions = paginate_questions(request, filteredSelection)
     categories = query_categories()
-    print(jsonify(categories))
 
     return {
             "questions": current_questions,
@@ -59,7 +58,7 @@ def run_quiz(previousQuestions, quizCategory):
 
     filteredSelection = []
     for element in selection:
-        if(element.id not in previousQuestions):
+         if(element.id not in previousQuestions):
             filteredSelection.append(element)
 
     return random.choice(filteredSelection) if len(filteredSelection) > 0 else None
@@ -120,6 +119,11 @@ def create_app(test_config=None):
 
     @app.route("/questions", methods=["GET"])
     def retrieve_questions():
+        questions = query_questions(request)
+        
+        if(len(questions.get("questions", None)) == 0):
+            abort(404)
+
         return query_questions(request)
 
     """
@@ -139,15 +143,13 @@ def create_app(test_config=None):
                 abort(404)
 
             question.delete()
-            try:
-                questions = query_questions(request)
-                return {
-                    "success": True,
-                    "deleted": question_id,
-                    "questions": questions["questions"],
-                    "total_questions": questions["total_questions"],
-                }
-            except: abort(404)
+            questions = query_questions(request)
+            return {
+                "success": True,
+                "deleted": question_id,
+                "questions": questions["questions"],
+                "total_questions": questions["total_questions"],
+            }
         except: abort(422)
 
     """
@@ -172,14 +174,14 @@ def create_app(test_config=None):
             difficulty = body.get("difficulty", None)
 
             if(question is None or answer is None or category is None or difficulty is None) :
-                abort(400)
+                abort(422)
             
             question: Question = Question(question, answer, category, difficulty)
             try:
                 question.insert()
-                return jsonify({'success': True, "message": 'Question has been created'}), 201
+                return jsonify({'success': True, "message": 'Question has been created', 'id': question.id}), 201
             except: abort(500)
-        except: abort(400)
+        except: abort(422)
     """
     @TODO:
     Create a POST endpoint to get questions based on a search term.
@@ -196,7 +198,7 @@ def create_app(test_config=None):
         try:
             searchTerm = request.get_json().get("searchTerm", None)
             return query_questions(request, searchTerm)
-        except: abort(400)
+        except: abort(422)
 
     """
     @TODO:
@@ -211,7 +213,7 @@ def create_app(test_config=None):
     def retrieve_question_category(id):
         try:
             return query_questions(request, "", id)
-        except: abort(400)
+        except: abort(422)
 
     """
     @TODO:
@@ -232,10 +234,8 @@ def create_app(test_config=None):
             previousQuestions = body.get("previous_questions", None)
             quizCategory = body.get("quiz_category", None)
             chosenQuestion = run_quiz(previousQuestions, quizCategory)
-            return {
-                "question": chosenQuestion.format() if chosenQuestion else None
-            }
-        except: abort(400)
+            return { "question": chosenQuestion.format() if chosenQuestion else None }
+        except: abort(422)
 
 ########################################################################################################################
 # ERROR HANDLERS
@@ -246,9 +246,17 @@ def create_app(test_config=None):
     Create error handlers for all expected errors
     including 404 and 422.
     """
-    # @app.errorhandler(404)
-    # def not_found(error):
-    #     return (jsonify({"success": False, "error": 404, "message": "resource not found"}), 404)
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"success": False, "error": 404, "message": "resource not found"}), 404
+    
+    @app.errorhandler(422)
+    def unprocessable(error):
+        return jsonify({"success": False, "error": 422, "message": "unprocessable"}), 422
+
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({"success": False, "error": 400, "message": "bad request"}), 400
 
     return app
 
