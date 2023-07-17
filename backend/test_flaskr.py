@@ -84,7 +84,7 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_deleting_invalid_id_should_fail(self):
         res = self.client().delete("/questions/1234567")
-        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res.status_code, 404)
 
     def test_search_for_string_in_questions(self):
         res = self.client().post("/questions/search", json={ 'searchTerm': 'pen' })

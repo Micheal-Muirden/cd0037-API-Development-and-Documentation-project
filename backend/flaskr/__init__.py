@@ -3,6 +3,7 @@
 import random
 from flask import Flask, request, abort, jsonify
 from models import setup_db, Question, Category
+from werkzeug.exceptions import HTTPException
 
 QUESTIONS_PER_PAGE = 10
 
@@ -101,9 +102,13 @@ def create_app():
             questions = query_questions(request)
             if len(questions.get("questions", None)) == 0:
                 abort(404)
-            return query_questions(request)
-        except Exception:
-            abort(500)
+            else:
+                return query_questions(request)
+        except Exception as error:
+            if isinstance(error, HTTPException):
+                abort(error.code)
+            else:
+                abort(500)
 
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
     def delete_question(question_id: str):
@@ -120,9 +125,12 @@ def create_app():
                 "deleted": question_id,
                 "questions": questions["questions"],
                 "total_questions": questions["total_questions"],
-            }
-        except Exception:
-            abort(422)
+            }           
+        except Exception as error:
+            if isinstance(error, HTTPException):
+                abort(error.code)
+            else:
+                abort(422)
 
     @app.route("/questions", methods=["POST"])
     def submit_question():
@@ -145,8 +153,11 @@ def create_app():
                      'id': question.id}), 201
             except Exception:
                 abort(500)
-        except Exception:
-            abort(422)
+        except Exception as error:
+            if isinstance(error, HTTPException):
+                abort(error.code)
+            else:
+                abort(422)
 
     @app.route("/questions/search", methods=["POST"])
     def search_questions():
@@ -179,19 +190,19 @@ def create_app():
 ####################################################################################################
 
     @app.errorhandler(404)
-    def not_found():
+    def not_found(error):
         return jsonify({"success": False, "error": 404, "message": "resource not found"}), 404
 
     @app.errorhandler(422)
-    def unprocessable():
+    def unprocessable(error):
         return jsonify({"success": False, "error": 422, "message": "unprocessable"}), 422
 
     @app.errorhandler(400)
-    def bad_request():
+    def bad_request(error):
         return jsonify({"success": False, "error": 400, "message": "bad request"}), 400
 
     @app.errorhandler(500)
-    def unspecified():
+    def unspecified(error):
         return jsonify({"success": False, "error": 500, "message": "Unspecified server error"}), 500
 
     return app
