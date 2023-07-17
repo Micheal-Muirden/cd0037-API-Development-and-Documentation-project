@@ -1,12 +1,8 @@
-import os
+"""Tests the functionality of the endpoints defined in ./flaskr/__init__.py"""
+
 import unittest
 import json
-from flask_sqlalchemy import SQLAlchemy
-
 from flaskr import create_app
-from models import setup_db, Question, Category
-from dotenv import dotenv_values
-
 
 class TriviaTestCase(unittest.TestCase):
     """This class represents the trivia test case"""
@@ -15,14 +11,14 @@ class TriviaTestCase(unittest.TestCase):
         """Define test variables and initialize app."""
         self.app = create_app()
         self.client = self.app.test_client
-    
+
     def tearDown(self):
         """Executed after reach test"""
         pass
-    
-    ####################################################################################################################
+
+    ################################################################################################
     # /CATEGORIES TEST CASES
-    ####################################################################################################################
+    ################################################################################################
 
     def test_get_categories(self):
         res = self.client().get("/categories")
@@ -35,9 +31,9 @@ class TriviaTestCase(unittest.TestCase):
         res = self.client().post("/categories")
         self.assertEqual(res.status_code, 405)
 
-    ####################################################################################################################
+    ################################################################################################
     # /QUESTIONS TEST CASES
-    ####################################################################################################################
+    ################################################################################################
 
     def test_get_questions(self):
         res = self.client().get("/questions")
@@ -55,77 +51,77 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(data["questions"]), 9)
-    
+
     def test_get_out_of_bound_page(self):
         res = self.client().get("/questions?page=999")
         self.assertEqual(res.status_code, 404)
 
     def test_add_then_delete_question(self):
         # First add the question that will be deleted so we don't have to rebuild the db every run
-        questionData = {
+        question_data = {
             'question': 'Dummy question to be deleted',
             'answer':  'Dummy answer',
             'category': 2 ,
             'difficulty': 3
         }
-        mockQuestionRes = self.client().post(f"/questions", json=questionData)
-        deleteId = json.loads(mockQuestionRes.data)["id"]
-        res = self.client().delete(f"/questions/{deleteId}")
+        mock_question_res = self.client().post("/questions", json=question_data)
+        delete_id = json.loads(mock_question_res.data)["id"]
+        res = self.client().delete(f"/questions/{delete_id}")
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["total_questions"], 19)
         for question in data["questions"]:
-            self.assertFalse(question["id"] == deleteId)
+            self.assertFalse(question["id"] == delete_id)
 
     def test_incomplete_question_should_not_be_added(self):
-        questionData = {
+        question_data = {
             'question': 'Dummy question to be deleted',
             'answer':  'Dummy answer',
             'category': 2 ,
         }
-        res = self.client().post(f"/questions", json=questionData)
+        res = self.client().post("/questions", json=question_data)
         self.assertEqual(res.status_code, 422)
 
     def test_deleting_invalid_id_should_fail(self):
-        res = self.client().delete(f"/questions/1234567")
+        res = self.client().delete("/questions/1234567")
         self.assertEqual(res.status_code, 422)
 
     def test_search_for_string_in_questions(self):
-        res = self.client().post(f"/questions/search", json={ 'searchTerm': 'pen' })
+        res = self.client().post("/questions/search", json={ 'searchTerm': 'pen' })
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["total_questions"], 2)
-    
+
     def test_search_for_empty_string(self):
-        res = self.client().post(f"/questions/search", json={ 'searchTerm': '' })
+        res = self.client().post("/questions/search", json={ 'searchTerm': '' })
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["total_questions"], 19)
 
     def test_search_for_not_found_string(self):
-        res = self.client().post(f"/questions/search", json={ 'searchTerm': 'abcdefg' })
+        res = self.client().post("/questions/search", json={ 'searchTerm': 'abcdefg' })
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["total_questions"], 0)
 
     def test_search_for_category_in_questions(self):
-        res = self.client().get(f"/categories/2/questions")
+        res = self.client().get("/categories/2/questions")
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["total_questions"], 4)
 
     def test_search_for_invalid_category(self):
-        res = self.client().get(f"/categories/12345/questions")
+        res = self.client().get("/categories/12345/questions")
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["total_questions"], 0)
 
-    ####################################################################################################################
+    ################################################################################################
     # /QUIZ TEST CASES
-    ####################################################################################################################
+    ################################################################################################
 
     def test_quiz_returns_applicable_question(self):
-        res = self.client().post("/quizzes", json={ 
+        res = self.client().post("/quizzes", json={
             'quiz_category': {'type': "Art", 'id': "2"},
             'previous_questions': []
             })
@@ -135,7 +131,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['question']["category"], 2)
 
     def test_quiz_returns_no_questions_when_category_empty(self):
-        res = self.client().post("/quizzes", json={ 
+        res = self.client().post("/quizzes", json={
             'quiz_category': {'type': "Art", 'id': "2"},
             'previous_questions': [16, 17, 18, 19]
             })

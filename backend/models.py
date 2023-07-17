@@ -1,11 +1,10 @@
-import os
-from sqlalchemy import Column, String, Integer, create_engine
+from sqlalchemy import Column, String, Integer
 from flask_sqlalchemy import SQLAlchemy
-import json
 from dotenv import dotenv_values
 
-database_path = dotenv_values("./backend/.env").get("DATABASE_PATH")
-
+config = dotenv_values(".env")
+database_password = config.get('DATABASE_PASSWORD')
+database_path = config.get('DATABASE_PATH').format(database_password)
 db = SQLAlchemy()
 
 """
